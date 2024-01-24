@@ -1,0 +1,366 @@
+Why frameworks or libraries?
+1. Previously we using HTML, CSS, Vanilla JS (pure JS without framework or library) to manipulate the DOM (write exactly what we want to show in the DOM). This is painful, lets use frameworks / libraries, they do magic under the hood and we just need to use their declarative syntax to tell them (framworks/libraries) what we want, and they will do the job of manipulate the DOM (write the exact code showed in DOM on behalf of us)
+
+2. Visit https://svelte.dev/tutorial/basics and learn Svelte
+
+    Setup of Svelte Project
+    1. cd to the desired folder and npm create svelte@latest svelte-project-name (skeleton project > no typescript > EsLint & Prettier)
+    2. cd to svelte-project-name and npm install
+    3. When want to work type npm run dev -- --open
+    4. Stop working then control + c
+    5. +page.svelte is root file
+
+
+
+MODE OF RENDERING HTML PAGES
+Svelte is a frontend framwork; Sveltekit we are using on VS Code is a full stack framework. Sveltekit gives us 3 ways to generate HTML to be showed to client browser
+1. Prerender: HTML pages are pre-generated on deployment. Great for relatively static pages such as marketing pages
+2. SPA: HTML pages are generated on the client. Great for frontend apps that are API reliant (km-svelete-project use this mode)
+3. Server Render: HTML pages are rendered on-demand server side. Great for dynamic pages that are important for SEO and accessibility
+
+
+
+Svelte (JS framework like React)
+1. Same as React: 
+    1.1 Use components like React (each component in a separate file name start with capital and end with .svelte)
+    1.2 use {} in html area for javascript expression
+    1.3 import another component (within script) and use like React (no need to put export default for child custom component like React)
+
+2. Different to React: 
+    2.1 The component is a function, not returning anything. Instead, it likes a html file without having proper html structure setup
+    2.2 Using <style></style> to declare locally scoped CSS already, no need use module.css like React
+    2.3 When using custom component, can pass props as React. Just that that custom child component need to write export let variableName in <script> and use as {variableName} to receive props value from parent component. In case the props value is an object in parent component, <Info name={pkg.name} version={pkg.version} speed={pkg.speed} website={pkg.website} />; just <Info {...pkg}> meaning throw the properties to child component (Info.svelte) already. Child component do the same thing export let name;export let version and so on (make sure match the key name)
+    2.4 onMount() and onDestroy() are used in <script> of a particular component to decide something to do at some point of time of life cycle. onMount is like using useEffect with empty parameter (run the function when the component using it (onMount) is render into DOM for the very first time only); onDestroy is like ComponentWillUnmount React (run the function when the component using it (onDestroy) is removed from the DOM only)
+    2.5 beforeUpdate: function called before DOM is updated; afterUpdate: function called after DOM is updated. Usually use this 2 when dealing with auto-scroll feature of chatbox
+    2.6 use await tick() to wait all the state updates before it done first, so anything after tick() is using the latest state value
+    2.7 <slot /> replaces props.children
+
+3. Lets start with DemoComponent.svelte
+
+    <script>
+        let name = 'KM';
+        let src = '/tutorial/image.gif';
+	    import Nested from './Nested.svelte';
+
+        let count = 0
+        const clickHandler = (event) => {
+            count += 1;
+        }
+        $: double = count * 2;
+    </script>
+
+    <style>
+        // the CSS properties here such "p" is locally scoped, wont affect the "p" in <Nested /> component
+        p {
+            color: purple;
+            font-family: 'Comic Sans MS', cursive;
+            font-size: 2em;
+        }
+    </style>
+
+    <img src={src} alt="dancing man"/>
+    <h1>Hello {name}!</h1> 
+    <p>Welcome here</p>
+    <Nested />
+    <button on:click={clickHandler}>Click {count} { count === 0 || count === 1 ? "time" : "times"}</button>
+    <p>DOUBLE of {count} is {double}</p>
+
+EXPLANATION:
+// If using {} to set attribute where attribute name same as variable name like src={src}, we can use <img {src} alt="dancing man" />
+// Can include JS and CSS in Svelte component. Javascript things write within <script></script>; CSS things write within <style></style>, take note the CSS written here is already locally scoped and won't apply to custom component
+// In Svelte, Reactive refer to a particular variable re-evaluation and update itself used in the html area, not like React doing whole component re-evaluation. If we are using {count} in html part, in order to update this "count" displayed in screen, must use "=" assignment operator (reactive in nature )to update its value. In case the value like variable {double} will update but not based on "=", this screen will not display its latest value since no reactivity trigger re-run of variable. So have to use reactive statement $: to create the variable "double". Variables confirm will change at some point based on something so it is called variables, when you know the change is not caused by "=" assignment operator, use $: to create it for reactivity. Whenever anythings on the right side of "double" change will trigger re-run of "double" and update the screen
+// Not necessary only declare variable via $:. Everything in Svelte is run one time only, in order to re-evaluate like condition statement using if in <script> must use $: so that it will re-run if anything on the right changes, else the if condition will only run for the very first time (right meaning after "=" if declaring variable like "double" OR just after $: if not declaring variable). Things in <script> got the chance to re-run only by "=" or $:
+// demoArray.push(newArray) is not reactive also, can use demoArray = demoArray.concat(newArray) OR demoArray = [...demoArray, ...newArray]
+
+
+4. IF ELSE, EACH
+    // Previously if else, loop thingy work in JS file only. Can work in html now 
+    // imagine products is an array, each element is an object storing keys: id,title,price. We can write below in html area (if else, each)with # as opening tag; / as closing tag; : as continuation tag. They are not supposed to work in html , but in svelte it is ok by syntax below
+    // <Product> is a custom component going to receive props value. The #each below work like using arrayItems.map to create custom component each, must put id for differentiation purpose
+    // #each can use individually with if else. #each is a loop for array
+
+    {#if products.length === 0}
+        <p>No Recound Found</p>
+    {:else if products.length === 10}
+        <p>10 Products now!</p>
+    {:else}
+        {#each products as product (product.id), index} // "index" is optional; first arguement can be destructuring like { title, price }
+            <Product productTitle={product.title} productPrice={product.price} />
+        {/each}
+    {/if}
+
+
+5. PROMISE
+    // Previously promise thingy work in JS file only. Can work in html now and print out resolved value / rejected value
+    // promiseName should be a promise; pending stage will print "...waiting"; Settled stage will go either then or catch and get the resolved value or rejected value
+    // althought using the word "await" here in html area, it has nothing to do with it, just like regular promise using .then .catch
+
+    {#await promiseName}
+        <p>...waiting</p>
+    {:then resolvedValue}
+        <p>The number is {resolvedValue}</p>
+    {:catch error}
+        <p style="color: red">{error.message}</p>
+    {/await}
+
+    // If don't want to print anything in pending stage:
+
+    {#await promiseName then resolvedValue}
+        <p>The number is {resolvedValue}</p>
+    {:catch error}
+        <p style="color: red">{error.message}</p>
+    {/await}
+
+
+6. Event listener
+    // Using event listener like React, just that onClick in React becomes on:click in svelte, can modifier to eventlistener such as on:click|once = {clickHandler}
+
+    1. If we using event listener such as on:click in <button>, we always point to a handler function storing a particular logic
+    2. If the logic function such as readCartHandler is inside the component just use <button on:click={readCartHandler}> 
+    3. If this function logic is from direct parent component or even higher tier parent component, use eventDispatcher to create a special event name to represent it (in case more than 1 on:click is used in the component) then keep passing upward to parent component or even higher-tier parent component till find its logic function (Instead of passing down the logic function as props like React for event listener thingy)
+
+        <!-- App.svelte -->
+        <Outer on:customEvent={handleCustomEvent} />
+
+        <!-- Outer.svelte -->
+        <Inner on:customEvent />
+
+        <!-- Inner.svelte -->
+        <Button on:customEvent />
+
+        <!-- Button.svelte -->
+        <button on:click={() => dispatch('customEvent')}> 
+        Click me for Custom Event
+        </button>
+
+        // without creating a new event named "customEvent" worked as well by keep passing on:click upward, but imagine what if we have more then 1 on:click in Button.svelte, the on:click pointed at "handleCustomEvent" in App.svelte belongs to which on:click in Button.svelte? thats why we need to create a special event name for it
+        // on:click used in Button.svelte but logic function in direct parent component (Inner.svelte) or even highier tier parent component
+        // First, the direct parent component (Inner.svelte) will use the special event listener created. If the logic function is here just point at it like <Button on:customEvent={handleCustomEvent}/>, else keep passing upward via rewrite the event listener name without pointing anything and the direct parent component of Inner.svelte which is Outer.svelte will do the same thing till we locate the logic function and point at it
+        // when using eventDispatcher in Button.svelte rmb to do below in <script>
+            import { createEventDispatcher } from 'svelte';
+            const dispatch = createEventDispatcher();
+
+
+7. Two ways binding (We always use 2 ways binding which is bind: where the input value which is event.target.value is gonna affect (update) a variable)
+
+    //7.1 - 7.3 is <input>
+    7.1. Can use 2-way binding like React such as <input value={title} on:input={titleChangeHandler}>. on:input = onChange and inside function titleChangeHandler is title = event.target.value (shothand of doing 2 way binding will be just <input bind:value={title}>,always stick to this when doing 2 ways binding in Svelte). 
+    
+    7.2. For input type="checkbox" use bind:checked={isChecked}, event.target.value of ticking the checkbox is true, else false
+
+    7.3. If multiple inputs are to bind to a same variable such as using input type: checkbox or radio, use bind:group with name attributes (same name to be in same group) and value attribute set (as event.target.value set to the variable when choosen) on each input. 
+    
+    7.4. <textarea> behaves like <input>, can use 2 ways binding also via bind:value
+
+    7.5 <select> by default can choose 1 option only, can use bind:value. For <select> to choose more than 1 option, use "multiple" attribute thus bind:value return an array
+
+    7.6. Elements with "contenteditable" attribute can use bind:innerHTML and bind:innerText
+
+        <div contenteditable="true" bind:innerHTML={textVariable} />
+
+        //so as usual whatever input is event.target.value and thus update the textVariable
+        // if using innerHTML, event.target.value will include the html tag even if you don't type it; innerText's event.target.value will be just pure text
+
+    7.7. For <video> and <audio>: 
+    The complete set of bindings for <audio> and <video> is as follows — six readonly bindings... (value don't affect won't have any effects)
+
+        duration (readonly) — the total duration of the video, in seconds
+        buffered (readonly) — an array of {start, end} objects
+        seekable (readonly) — ditto
+        played (readonly) — ditto
+        seeking (readonly) — boolean
+        ended (readonly) — boolean
+
+        ...and five two-way bindings:
+
+        currentTime — the current point in the video, in seconds
+        playbackRate — how fast to play the video, where 1 is 'normal'
+        paused — this one should be self-explanatory
+        volume — a value between 0 and 1
+        muted — a boolean value where true is muted
+
+    7.8 bind:this is similar to useRefs (can be in html element or custom component)
+
+        <script>
+            let inputRef //create ref variable (any name)
+
+            const submitHandler = () => {
+                console.log(inputRef.value) //do what we want such as .value .focus
+            }
+        </script>
+
+        // set connection with ref (take note whether it is a html regular element or custom component)
+        <input bind:this={inputRef} /> 
+        <button>Submit</button>
+
+        //If used in custom component, just like useRef in React. It supposed to be worked but it is a custom component so go to the child component and do the same thing and export the function (name is the alias action to be used in parent component) doing the thing we want. Parent component just need to make sure the action name using the function name ("demo" in this case)
+
+            //InputField.svelte
+            <script>
+                let input;
+
+                export function demo() {
+                    input.focus(); //what we actually want to do in parent component, now give an alias name of demo
+                }
+            </script>
+            <input bind:this={input} />
+
+            //parent component using <InputField>
+            <script>
+                import InputField from './InputField.svelte';
+
+                let field;
+            </script>
+
+            <InputField bind:this={field} /> //custom component!!
+            <button on:click={() => field.demo()}>Focus field</button> //put field.focus supposed worked but <InputField> is custom component so cannot. Use ".demo" which is the function name in <InputField> declared and exported to do the same thing
+
+    7.9. Can bind on props in parent component. So if the props value changed in child component, the parent component is able to grab it
+
+        // In parent component using <Keypad>
+        let pin
+        <Keypad bind:value={pin} /> // "value" is a props 
+
+        // In Keypad component
+        <style>
+            export let value
+
+            const clickHandler = () => {
+                value += 1 //update value of props
+            }
+        </style>
+        <button on:click={clickHandler}>Click me</button>
+
+        //Whenever "value" variable changes value, parent component able to get it due to bind on props
+
+
+8. Can create a variable known as store to keep a value globally in JS file and every svelte omponents can use it by import it. 3 main types: writable (custom store, 2 ways binding), readable, derived
+
+    8.1 In a JS file named stores.js, create a store named "anyName" with any initial value, in this case "0". export it
+            import { writable } from 'svelte/store';
+            export const anyName = writable(0);
+
+    8.2 For any svelte components want to update the value, use .update or .set (create a function to store the commands)
+            <script>
+            import { anyName } from './stores.js';
+
+            function increment() {
+                anyName.update((n) => n + 1); //update based on prev value, n
+            }
+            OR
+            function decrement() {
+                anyName.update((n) => n - 1); //update based on prev value, n
+            }
+            OR
+            function reset() {
+                anyName.set(0);  //update with a new value w/o based on prev value
+            }
+            </script>
+            <button on:click={reset}> reset </button>
+
+    8.3 For any svelte components want to use (subscribe) the value, use $
+            <script>
+            import { anyName } from './stores.js';
+            <script>
+            <p>{$anyName}</p> // the value will change as well when someone update the value in store "anyName"
+
+8.5 Another way of doing the above is via Custom Store. We striaght away include the commands of .update .set to be used (such as functions named increment, decrement and reset) into the store. So if any components want to update the store value, don't have to create a new function to store the commands
+
+    // In a JS file named stores.js
+    import { writable } from 'svelte/store';
+
+    function createCount() {
+        const { subscribe, set, update } = writable(0); //these 3 are fixed
+
+        return {
+            subscribe,
+
+            //below are functions supposed to be created when want to update store value in respective component
+            increment: () => update((n) => n + 1),
+            decrement: () => update((n) => n - 1),
+            reset: () => set(0)
+        };
+    }
+
+    export const anyName = createCount(); //store named "anyName" is created but not using "writable", instead calling the function 
+
+    // For any components want to update the store value, just use $ (no need create a function to store command)
+    <style>
+    import { anyName } from './stores.js';
+    </style>
+    <button on:click={$anyName.increment}>Add</button>
+    <button on:click={$anyName.decrement}>Minus</button>
+    <button on:click={$anyName.reset}>Reset</button>
+
+    // For any components want to use the store value, same as 8.3
+
+8.6 Previously mentioned Writable store's value can be update via .update and .set only; Besides, it can be updated also in <input> via 2 ways binding
+
+    //For any svelte components want to use (subscribe) the value. In this case, we want to use the store value in <input>. And via 2 ways binding: event.target.value will update the store variable $anyName
+        <script>
+        import { anyName } from './stores.js';
+        <script>
+        <input bind:value={$anyName}></input>
+
+9. Same as 8 creating a store globally. However, every components can use it only without the rights to update the value (read-only). For example, showing time
+
+    9.1 In a JS file named stores.js
+            import { readable } from 'svelte/store';
+
+            //first parameter is initial value; second parameter is a start function, get called when first person subscribe because since no one can update the value, we use set to update the value ourself. It return a stop function, get called when last person subscribe, to clear the "set" in start function
+            export const time = readable(new Date(), function start(set) {
+                const interval = setInterval(() => {
+                    set(new Date());
+                }, 1000);
+
+                return function stop() {
+                    clearInterval(interval);
+                };
+            });
+
+    9.2 For any svelte components want to use (subscribe) the value, use $ as usual
+            <script>
+            import { time } from './stores.js';
+
+            const formatter = new Intl.DateTimeFormat('en', {
+                hour12: true,
+                hour: 'numeric',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            </script>
+
+            <h1>The time is {formatter.format($time)}</h1>
+
+
+10. Create a store whose value is based on another store's value (In this case, we based on store "anyName"). Every component can use it but cannot update it because it is already based on another store value
+    
+    10.1 In a JS file named stores.js
+            import { derived } from 'svelte/store';
+
+            // first parameter is the name of store being based on; second parameter is a function to return the value of store "eatFreq" based on $anyName
+            export const eatFreq = derived(anyName, ($anyName) => $anyName/1000);
+
+            10.2 For any components want to use it
+            <style>
+            import { anyName, eatFreq } from './stores.js';
+            </style>
+            <p>$eatFreq<p>
+
+
+    
+
+
+
+
+    
+
+
+    
+
+
+
+
+
+
+

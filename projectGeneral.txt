@@ -1,0 +1,101 @@
+PROJECT-RELATED
+1. Project Setup
+    1.1 Create a svelte project as mentioned previously. then set local nodejs via asdf
+    1.2 In km-svelete-project to use SPA HTML render mode, create a file named +layout.js in src/routes and copy below
+    export const ssr = false; // this essentially turns our entire project into true SPA mode. No JS code will execute server side.
+
+2. As using Sveltekit in VS Code, we are creating a new page via file-based routing
+The routes of your app — i.e. the URL paths that users can access — are defined by the directories in your codebase:
+A +page.svelte component defines a page of your app.
+    2.1 sveltekit using file-based routing. "hello" is a folder under "routes" so https://something.com/hello, it will look for file at src/routes/hello/+page.svelte; https://something.com look for file at src/routes/+page.svelte (which is root file). Different +page.svelte in different folder representing different page
+    2.2 Another way to switch page (instead of edit the URL) is by adding <a href="/hello"> tag in root page, it will look for file at routes/hello/+page.svelte! However if you want to set <a> in new page to go back to root page, <a href="/">
+
+3. This project is using Tailwind CSS framework. DaisyUI is a customizable tailwind CSS component library. 
+    3.1 Setup Tailwind CSS by: https://tailwindcss.com/docs/guides/sveltekit (step 5 create a css file other than name "app.css")
+    
+    <style>
+        .myClass {
+            font-size: 0.75rem; /* 12px */
+            line-height: 1rem; /* 16px */
+        }
+    </style>
+
+    <p class="myClass">Hello World</p>  
+    becomes
+
+    <p class="text-xs">Hello World</p>
+
+    3.2 To view what shortcut classes (so called utility classes) to use can go https://tailwindcss.com/docs
+
+4. DaisyUI provide pre-written component using Tailwind CSS utility classes
+    4.1 Setup DaisyUI by: https://daisyui.com/docs/install/ (DaisyUI comes with default theme that affect the background color of your page, see https://daisyui.com/docs/themes/) If have more than 1 theme, choose it by specifies in <html> in app.html
+    4.2 By default it allow light and dark theme only, to configure it see https://daisyui.com/docs/config/
+
+    //Using DaisyUI as class name also
+    <button class="btn">Button</button>
+
+5. Use apps "Docker Desktop" engine and keep it running so that we can open http://localhost:8080/_/ to see our backend. For this project, we already have a ready-to-use backend and database via Pocketbase
+
+6. Use API tools "Insomnia" to test API and see the structure of final response object which is the resolved value of responseObj.json(). We can use this tools when: using others's API to see what we got back OR building own application where we finished backend part and now doing frontend development to test is the backend API working and connect to database successfully via HTTP requests
+    6.1 Since we are building our own application (Not deploy yet), assuming we already build the backend database and we don't have a URL yet due to application is not deploy yet, the backend database will be stored in local host. So when building frontend side we need to test our backend application which is stored in local host to see whether CRUD is worked. Thus the General URL of our non-deploy database is http://localhost:8080 with endpoint or query parameter accordingly. When the application is deployed, we can replace with the valid URL base such as https://next-jobs-db-backend.fly.dev in this case
+
+    6.2 The API that designed for third parties to use is done in backend part, not relevant in frontend development. Besides, third parties are not limited to usage GET request only
+
+7. Previously we did API request in VS Code so called node environment. Now we are building frontend application, so need to call API in the browser. Try inspect the page and go console part type 3 lines below:
+    const resp = await fetch("http://localhost:8080" + '/api/collections/jobs/records');
+    const res = await resp.json();
+    res 
+    //res is the response object we got!!
+
+
+ROUTING
+1. Term used for frontend framework on handling URLs to make sure CRUD is working. Create, Read, Update, Delete. 2 main things to do in frontend which are designing user interfaces and testing the backend API (the backend API's url should be from localhost)
+
+2. URL = General URL formed by Protocol (https), Subdomains (www), domain (nextacademy.com) + /endpoints (or called parameters) + ?query
+    2.1 When doing ROUTING, we just need to take care of the endpoints (parameters)
+
+3. src/routes is for mainly for building pages +page.svelte in different folder. For components, build in src/components
+
+
+Creating Svelte Project:
+1. Different from usual project setup, which is cd to the folder such as "ABC" and set local nodejs then npm init. By this way, all project files such as package.json and tools-version created is straight away inside folder "ABC"
+2. Setting Svelete project is cd to "ABC" then npm create svelte@latest <name-of-app>, all project files created is inside /ABC/name-of-app, so we cd to name-of-app to create local nodejs
+
+PROJECT EXPLANATION:
+1. Light mode and dark mode
+2. Without login as user, home page can see how many job is available and their respective details (If no job available then will mention there)
+3. To post a job, have to login. Non-member can proceed to sign up. Once sign up done will auto login without have to login manually again
+4. Once login successfully, will go to post-job-form
+5. Once job is added, auto go to home page and can see the job posted just now (can modify or delete it in MANAGE)
+6. User profile can update password and delete user account
+6. Will explain a bit on the form created. 
+    6.1 For sign-up-form, the first validate will be on lost-focus. If error pop out, it will then validate based on every keystroke. At first the submit button is disabled till all inputs are correct.
+    6.2 For job-posting-form, concepts are the same as above. The different things is when modify-job-posting-form. Since it is modifying, the submit button is not enable because all inputs are validate previously. The first validation will be start on every keystroke, as long as input becomes invalid will cause the submit button disabled
+7. loading spin after button clicked
+8. Reloading page will not log out the user
+
+FRONTEND & BACNKEND
+(Assume backend already deployed, got valid backend URL but frontend part haven't started. Start now)
+1. When builing frontend in VS Code, use DOCKER to run the fake (local host) backend and use this (fake) local host backend URL in .env. Use npm run dev -- --open to see the user interface (Both backend and frontend are local hosts as this is development environment)
+    1.1 Install Docker Engine and Docker Compose on your machine.
+        Mac: https://docs.docker.com/get-docker/
+        Windows: https://docs.docker.com/desktop/windows/wsl/
+    
+    1.2 Clone this repository in a separate folder from front-end-project folder
+        git clone git@github.com:NextAcademy/next-jobs-db-backend.git # if you have already set up SSH keys
+        git clone https://github.com/NextAcademy/next-jobs-db-backend.git
+    
+    1.3 Navigate into the root of this repository cd </path/to/project>
+        Run! docker-compose up -d or docker compose up -d depending on your version of Docker Compose
+    
+    1.4 Go to http://localhost:8080/_/ in your browser
+        Log in with credentials set up in backend part previously. Now the fake backend base URL is set up! Rmb to keep Docker running in order to access to the fake backend BASE URL
+
+    1.5 Can use apps "Insomia" to check API endpoint
+
+2. When frontend done, push to GitHub. Login Cloudflare and locate this repo to create the page
+
+2. When deploying this in Cloudflare, use back the valid backend URL. use deployed URL generated from Cloudflare to see the user interface
+
+
+
